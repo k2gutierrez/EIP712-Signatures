@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.30;
 
-import { ERC20 } from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
-import { ERC20Permit } from "@openzeppelin/contracts/token/ERC20/extensions/ERC20Permit.sol";
+import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import {ERC20Permit} from "@openzeppelin/contracts/token/ERC20/extensions/ERC20Permit.sol";
 
 /// @title PermitToken — ERC20 with ERC-2612 Permit (Gasless Approvals via EIP-712)
 /// @author Carlos Gutiérrez
@@ -46,7 +46,6 @@ import { ERC20Permit } from "@openzeppelin/contracts/token/ERC20/extensions/ERC2
 /// - deadline: signature expires after this timestamp
 ///
 contract PermitToken is ERC20, ERC20Permit {
-
     // ═══════════════════════════════════════════════════════════════════════
     // CONSTRUCTOR
     // ═══════════════════════════════════════════════════════════════════════
@@ -54,11 +53,7 @@ contract PermitToken is ERC20, ERC20Permit {
     /// @param _name Token name (also used as EIP-712 domain name)
     /// @param _symbol Token symbol
     /// @param _initialSupply Initial supply minted to deployer
-    constructor(
-        string memory _name,
-        string memory _symbol,
-        uint256 _initialSupply
-    )
+    constructor(string memory _name, string memory _symbol, uint256 _initialSupply)
         ERC20(_name, _symbol)
         ERC20Permit(_name)
     {

@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.30;
 
-import { ECDSA } from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
-import { EIP712 } from "@openzeppelin/contracts/utils/cryptography/EIP712.sol";
-import { Nonces } from "@openzeppelin/contracts/utils/Nonces.sol";
-import { PermitToken } from "./PermitToken.sol";
+import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
+import {EIP712} from "@openzeppelin/contracts/utils/cryptography/EIP712.sol";
+import {Nonces} from "@openzeppelin/contracts/utils/Nonces.sol";
+import {PermitToken} from "./PermitToken.sol";
 
 /// @title GaslessVault — A Vault with Custom EIP-712 Signed Authorizations
 /// @author Carlos Gutiérrez
@@ -75,9 +75,8 @@ contract GaslessVault is EIP712, Nonces {
     ///
     /// This tells EIP-712: "When I sign a WithdrawAuthorization, it has these fields in this order."
     /// Wallets that support EIP-712 will display this information to the user before signing.
-    bytes32 public constant WITHDRAW_TYPEHASH = keccak256(
-        "WithdrawAuthorization(address owner,address to,uint256 amount,uint256 nonce,uint256 deadline)"
-    );
+    bytes32 public constant WITHDRAW_TYPEHASH =
+        keccak256("WithdrawAuthorization(address owner,address to,uint256 amount,uint256 nonce,uint256 deadline)");
 
     // ═══════════════════════════════════════════════════════════════════════
     // ERRORS
@@ -136,14 +135,9 @@ contract GaslessVault is EIP712, Nonces {
     /// @param v ECDSA recovery byte for the permit signature
     /// @param r ECDSA signature component for the permit signature
     /// @param s ECDSA signature component for the permit signature
-    function depositWithPermit(
-        address owner,
-        uint256 amount,
-        uint256 deadline,
-        uint8 v,
-        bytes32 r,
-        bytes32 s
-    ) external {
+    function depositWithPermit(address owner, uint256 amount, uint256 deadline, uint8 v, bytes32 r, bytes32 s)
+        external
+    {
         if (amount == 0) revert ZeroAmount();
 
         // Step 1: Use the permit signature to approve this vault
@@ -208,15 +202,9 @@ contract GaslessVault is EIP712, Nonces {
     /// @param v ECDSA recovery byte
     /// @param r ECDSA signature component
     /// @param s ECDSA signature component
-    function withdrawBySig(
-        address owner,
-        address to,
-        uint256 amount,
-        uint256 deadline,
-        uint8 v,
-        bytes32 r,
-        bytes32 s
-    ) external {
+    function withdrawBySig(address owner, address to, uint256 amount, uint256 deadline, uint8 v, bytes32 r, bytes32 s)
+        external
+    {
         // Check: deadline
         if (block.timestamp > deadline) revert DeadlineExpired();
         if (amount == 0) revert ZeroAmount();
@@ -224,16 +212,7 @@ contract GaslessVault is EIP712, Nonces {
 
         // Step 1: Build the struct hash for WithdrawAuthorization
         // _useNonce atomically reads AND increments the nonce (from OZ Nonces)
-        bytes32 structHash = keccak256(
-            abi.encode(
-                WITHDRAW_TYPEHASH,
-                owner,
-                to,
-                amount,
-                _useNonce(owner),
-                deadline
-            )
-        );
+        bytes32 structHash = keccak256(abi.encode(WITHDRAW_TYPEHASH, owner, to, amount, _useNonce(owner), deadline));
 
         // Step 2: Compute EIP-712 digest (OZ handles "\x19\x01" prefix + domain separator)
         bytes32 digest = _hashTypedDataV4(structHash);

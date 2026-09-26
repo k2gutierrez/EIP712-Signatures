@@ -67,9 +67,8 @@ contract EIP712Test is Test {
     /// exactly what goes into it.
     function test_domainSeparatorComputedCorrectly() public view {
         // Manually compute what the domain separator SHOULD be
-        bytes32 domainTypeHash = keccak256(
-            "EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)"
-        );
+        bytes32 domainTypeHash =
+            keccak256("EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)");
 
         bytes32 expected = keccak256(
             abi.encode(
@@ -99,17 +98,15 @@ contract EIP712Test is Test {
     /// @notice Verify the PERMIT_TYPEHASH matches the canonical type string
     /// @dev OZ makes PERMIT_TYPEHASH private, so we verify by computing it ourselves
     function test_permitTypehashMatchesExpected() public pure {
-        bytes32 expected = keccak256(
-            "Permit(address owner,address spender,uint256 value,uint256 nonce,uint256 deadline)"
-        );
+        bytes32 expected =
+            keccak256("Permit(address owner,address spender,uint256 value,uint256 nonce,uint256 deadline)");
         assertEq(PERMIT_TYPEHASH, expected);
     }
 
     /// @notice Verify the WITHDRAW_TYPEHASH matches the canonical type string
     function test_withdrawTypehashMatchesExpected() public view {
-        bytes32 expected = keccak256(
-            "WithdrawAuthorization(address owner,address to,uint256 amount,uint256 nonce,uint256 deadline)"
-        );
+        bytes32 expected =
+            keccak256("WithdrawAuthorization(address owner,address to,uint256 amount,uint256 nonce,uint256 deadline)");
         assertEq(vault.WITHDRAW_TYPEHASH(), expected);
     }
 
@@ -139,9 +136,7 @@ contract EIP712Test is Test {
 
         // ── STEP 2: Build the full EIP-712 digest ──
         // digest = keccak256("\x19\x01" || domainSeparator || structHash)
-        bytes32 digest = keccak256(
-            abi.encodePacked("\x19\x01", token.DOMAIN_SEPARATOR(), structHash)
-        );
+        bytes32 digest = keccak256(abi.encodePacked("\x19\x01", token.DOMAIN_SEPARATOR(), structHash));
 
         // ── STEP 3: Alice signs the digest with her private key ──
         // In the real world, MetaMask does this via eth_signTypedData_v4
@@ -172,9 +167,7 @@ contract EIP712Test is Test {
     function test_permitRevertsAfterDeadline() public {
         uint256 deadline = block.timestamp + 1 hours;
 
-        (uint8 v, bytes32 r, bytes32 s) = _signPermit(
-            ALICE, ALICE_PK, address(vault), 100e18, 0, deadline
-        );
+        (uint8 v, bytes32 r, bytes32 s) = _signPermit(ALICE, ALICE_PK, address(vault), 100e18, 0, deadline);
 
         // Warp past the deadline
         vm.warp(deadline + 1);
@@ -188,14 +181,18 @@ contract EIP712Test is Test {
         uint256 deadline = block.timestamp + 1 hours;
 
         // BOB signs a permit claiming to be ALICE
-        (uint8 v, bytes32 r, bytes32 s) = _signPermit(
-            ALICE, BOB_PK, address(vault), 100e18, 0, deadline // BOB's PK but ALICE as owner!
-        );
+        (uint8 v, bytes32 r, bytes32 s) =
+            _signPermit(
+                ALICE,
+                BOB_PK,
+                address(vault),
+                100e18,
+                0,
+                deadline // BOB's PK but ALICE as owner!
+            );
 
         // OZ recovers BOB's address and reverts because BOB != ALICE
-        vm.expectRevert(
-            abi.encodeWithSelector(ERC20Permit.ERC2612InvalidSigner.selector, vm.addr(BOB_PK), ALICE)
-        );
+        vm.expectRevert(abi.encodeWithSelector(ERC20Permit.ERC2612InvalidSigner.selector, vm.addr(BOB_PK), ALICE));
         token.permit(ALICE, address(vault), 100e18, deadline, v, r, s);
     }
 
@@ -203,9 +200,7 @@ contract EIP712Test is Test {
     function test_permitRevertsWithReusedSignature() public {
         uint256 deadline = block.timestamp + 1 hours;
 
-        (uint8 v, bytes32 r, bytes32 s) = _signPermit(
-            ALICE, ALICE_PK, address(vault), 100e18, 0, deadline
-        );
+        (uint8 v, bytes32 r, bytes32 s) = _signPermit(ALICE, ALICE_PK, address(vault), 100e18, 0, deadline);
 
         // First use — succeeds
         token.permit(ALICE, address(vault), 100e18, deadline, v, r, s);
@@ -228,9 +223,7 @@ contract EIP712Test is Test {
         uint256 deadline = block.timestamp + 1 hours;
 
         // Alice signs a permit for the vault to spend her tokens
-        (uint8 v, bytes32 r, bytes32 s) = _signPermit(
-            ALICE, ALICE_PK, address(vault), amount, 0, deadline
-        );
+        (uint8 v, bytes32 r, bytes32 s) = _signPermit(ALICE, ALICE_PK, address(vault), amount, 0, deadline);
 
         // Relayer calls depositWithPermit — Alice pays no gas!
         vm.prank(RELAYER);
@@ -248,15 +241,11 @@ contract EIP712Test is Test {
         uint256 deadline = block.timestamp + 1 hours;
 
         // First deposit
-        (uint8 v1, bytes32 r1, bytes32 s1) = _signPermit(
-            ALICE, ALICE_PK, address(vault), amount1, 0, deadline
-        );
+        (uint8 v1, bytes32 r1, bytes32 s1) = _signPermit(ALICE, ALICE_PK, address(vault), amount1, 0, deadline);
         vault.depositWithPermit(ALICE, amount1, deadline, v1, r1, s1);
 
         // Second deposit (nonce is now 1)
-        (uint8 v2, bytes32 r2, bytes32 s2) = _signPermit(
-            ALICE, ALICE_PK, address(vault), amount2, 1, deadline
-        );
+        (uint8 v2, bytes32 r2, bytes32 s2) = _signPermit(ALICE, ALICE_PK, address(vault), amount2, 1, deadline);
         vault.depositWithPermit(ALICE, amount2, deadline, v2, r2, s2);
 
         assertEq(vault.s_vaultBalanceOf(ALICE), amount1 + amount2);
@@ -266,9 +255,7 @@ contract EIP712Test is Test {
     function test_depositRevertsWithZeroAmount() public {
         uint256 deadline = block.timestamp + 1 hours;
 
-        (uint8 v, bytes32 r, bytes32 s) = _signPermit(
-            ALICE, ALICE_PK, address(vault), 0, 0, deadline
-        );
+        (uint8 v, bytes32 r, bytes32 s) = _signPermit(ALICE, ALICE_PK, address(vault), 0, 0, deadline);
 
         vm.expectRevert(GaslessVault.ZeroAmount.selector);
         vault.depositWithPermit(ALICE, 0, deadline, v, r, s);
@@ -289,9 +276,7 @@ contract EIP712Test is Test {
         _depositToVault(ALICE, ALICE_PK, depositAmount);
 
         // Alice signs a WithdrawAuthorization (custom EIP-712 struct!)
-        (uint8 v, bytes32 r, bytes32 s) = _signWithdraw(
-            ALICE, ALICE_PK, BOB, withdrawAmount, 0, deadline
-        );
+        (uint8 v, bytes32 r, bytes32 s) = _signWithdraw(ALICE, ALICE_PK, BOB, withdrawAmount, 0, deadline);
 
         // Relayer submits the withdrawal
         vm.prank(RELAYER);
@@ -308,9 +293,7 @@ contract EIP712Test is Test {
 
         uint256 nonceBefore = vault.nonces(ALICE);
 
-        (uint8 v, bytes32 r, bytes32 s) = _signWithdraw(
-            ALICE, ALICE_PK, BOB, 100e18, 0, block.timestamp + 1 hours
-        );
+        (uint8 v, bytes32 r, bytes32 s) = _signWithdraw(ALICE, ALICE_PK, BOB, 100e18, 0, block.timestamp + 1 hours);
         vault.withdrawBySig(ALICE, BOB, 100e18, block.timestamp + 1 hours, v, r, s);
 
         assertEq(vault.nonces(ALICE), nonceBefore + 1);
@@ -321,9 +304,7 @@ contract EIP712Test is Test {
         _depositToVault(ALICE, ALICE_PK, 500e18);
         uint256 deadline = block.timestamp + 1 hours;
 
-        (uint8 v, bytes32 r, bytes32 s) = _signWithdraw(
-            ALICE, ALICE_PK, BOB, 100e18, 0, deadline
-        );
+        (uint8 v, bytes32 r, bytes32 s) = _signWithdraw(ALICE, ALICE_PK, BOB, 100e18, 0, deadline);
 
         vm.warp(deadline + 1);
 
@@ -337,9 +318,7 @@ contract EIP712Test is Test {
         uint256 deadline = block.timestamp + 1 hours;
 
         // BOB signs but claims to be ALICE
-        (uint8 v, bytes32 r, bytes32 s) = _signWithdraw(
-            ALICE, BOB_PK, BOB, 100e18, 0, deadline
-        );
+        (uint8 v, bytes32 r, bytes32 s) = _signWithdraw(ALICE, BOB_PK, BOB, 100e18, 0, deadline);
 
         vm.expectRevert(GaslessVault.InvalidWithdrawSignature.selector);
         vault.withdrawBySig(ALICE, BOB, 100e18, deadline, v, r, s);
@@ -354,9 +333,7 @@ contract EIP712Test is Test {
         uint256 deadline = block.timestamp + 1 hours;
 
         // Alice permits 100 tokens
-        (uint8 v, bytes32 r, bytes32 s) = _signPermit(
-            ALICE, ALICE_PK, address(vault), 100e18, 0, deadline
-        );
+        (uint8 v, bytes32 r, bytes32 s) = _signPermit(ALICE, ALICE_PK, address(vault), 100e18, 0, deadline);
         token.permit(ALICE, address(vault), 100e18, deadline, v, r, s);
 
         // Try to replay — fails because nonce is now 1
@@ -373,9 +350,7 @@ contract EIP712Test is Test {
         uint256 deadline = block.timestamp + 1 hours;
 
         // Sign a permit for the ORIGINAL token
-        (uint8 v, bytes32 r, bytes32 s) = _signPermit(
-            ALICE, ALICE_PK, address(vault), 100e18, 0, deadline
-        );
+        (uint8 v, bytes32 r, bytes32 s) = _signPermit(ALICE, ALICE_PK, address(vault), 100e18, 0, deadline);
 
         // Try to use it on the evil token — fails because address(this) differs
         // in the domain separator, even though the name is the same!
@@ -389,9 +364,7 @@ contract EIP712Test is Test {
         uint256 deadline = block.timestamp + 1 hours;
 
         // Sign a withdrawal authorization
-        (uint8 v, bytes32 r, bytes32 s) = _signWithdraw(
-            ALICE, ALICE_PK, BOB, 100e18, 0, deadline
-        );
+        (uint8 v, bytes32 r, bytes32 s) = _signWithdraw(ALICE, ALICE_PK, BOB, 100e18, 0, deadline);
 
         // Try to use it as a permit — different struct hash + different domain separator
         vm.expectRevert();
@@ -404,9 +377,7 @@ contract EIP712Test is Test {
         uint256 deadline = block.timestamp + 1 hours;
 
         // Try to withdraw more than deposited
-        (uint8 v, bytes32 r, bytes32 s) = _signWithdraw(
-            ALICE, ALICE_PK, BOB, 200e18, 0, deadline
-        );
+        (uint8 v, bytes32 r, bytes32 s) = _signWithdraw(ALICE, ALICE_PK, BOB, 200e18, 0, deadline);
 
         vm.expectRevert(GaslessVault.InsufficientVaultBalance.selector);
         vault.withdrawBySig(ALICE, BOB, 200e18, deadline, v, r, s);
@@ -427,9 +398,7 @@ contract EIP712Test is Test {
         uint256 deadline = block.timestamp + 1 hours;
 
         // Sign with a random private key, claiming to be Alice
-        (uint8 v, bytes32 r, bytes32 s) = _signPermit(
-            ALICE, randomPk, address(vault), 100e18, 0, deadline
-        );
+        (uint8 v, bytes32 r, bytes32 s) = _signPermit(ALICE, randomPk, address(vault), 100e18, 0, deadline);
 
         // Should ALWAYS revert — only Alice's private key can sign for Alice
         // OZ will revert with ERC2612InvalidSigner(recoveredAddr, ALICE)
@@ -442,9 +411,7 @@ contract EIP712Test is Test {
         deadline = bound(deadline, block.timestamp, type(uint256).max);
         // Amount can be anything (even more than balance — permit just sets allowance)
 
-        (uint8 v, bytes32 r, bytes32 s) = _signPermit(
-            ALICE, ALICE_PK, address(vault), amount, 0, deadline
-        );
+        (uint8 v, bytes32 r, bytes32 s) = _signPermit(ALICE, ALICE_PK, address(vault), amount, 0, deadline);
 
         token.permit(ALICE, address(vault), amount, deadline, v, r, s);
         assertEq(token.allowance(ALICE, address(vault)), amount);
@@ -466,49 +433,34 @@ contract EIP712Test is Test {
         uint256 deadline
     ) internal view returns (uint8 v, bytes32 r, bytes32 s) {
         // 1. Build struct hash
-        bytes32 structHash = keccak256(
-            abi.encode(PERMIT_TYPEHASH, owner, spender, value, nonce, deadline)
-        );
+        bytes32 structHash = keccak256(abi.encode(PERMIT_TYPEHASH, owner, spender, value, nonce, deadline));
 
         // 2. Build EIP-712 digest
-        bytes32 digest = keccak256(
-            abi.encodePacked("\x19\x01", token.DOMAIN_SEPARATOR(), structHash)
-        );
+        bytes32 digest = keccak256(abi.encodePacked("\x19\x01", token.DOMAIN_SEPARATOR(), structHash));
 
         // 3. Sign
         (v, r, s) = vm.sign(signerPk, digest);
     }
 
     /// @dev Signs a Permit and submits it on-chain
-    function _signAndSubmitPermit(
-        address owner,
-        uint256 signerPk,
-        address spender,
-        uint256 value,
-        uint256 deadline
-    ) internal {
+    function _signAndSubmitPermit(address owner, uint256 signerPk, address spender, uint256 value, uint256 deadline)
+        internal
+    {
         uint256 nonce = token.nonces(owner);
         (uint8 v, bytes32 r, bytes32 s) = _signPermit(owner, signerPk, spender, value, nonce, deadline);
         token.permit(owner, spender, value, deadline, v, r, s);
     }
 
     /// @dev Signs a WithdrawAuthorization struct (vault's custom EIP-712 type)
-    function _signWithdraw(
-        address owner,
-        uint256 signerPk,
-        address to,
-        uint256 amount,
-        uint256 nonce,
-        uint256 deadline
-    ) internal view returns (uint8 v, bytes32 r, bytes32 s) {
+    function _signWithdraw(address owner, uint256 signerPk, address to, uint256 amount, uint256 nonce, uint256 deadline)
+        internal
+        view
+        returns (uint8 v, bytes32 r, bytes32 s)
+    {
         // Note: This uses the VAULT's domain separator, not the token's!
-        bytes32 structHash = keccak256(
-            abi.encode(vault.WITHDRAW_TYPEHASH(), owner, to, amount, nonce, deadline)
-        );
+        bytes32 structHash = keccak256(abi.encode(vault.WITHDRAW_TYPEHASH(), owner, to, amount, nonce, deadline));
 
-        bytes32 digest = keccak256(
-            abi.encodePacked("\x19\x01", vault.DOMAIN_SEPARATOR(), structHash)
-        );
+        bytes32 digest = keccak256(abi.encodePacked("\x19\x01", vault.DOMAIN_SEPARATOR(), structHash));
 
         (v, r, s) = vm.sign(signerPk, digest);
     }
@@ -518,9 +470,7 @@ contract EIP712Test is Test {
         uint256 nonce = token.nonces(owner);
         uint256 deadline = block.timestamp + 1 hours;
 
-        (uint8 v, bytes32 r, bytes32 s) = _signPermit(
-            owner, ownerPk, address(vault), amount, nonce, deadline
-        );
+        (uint8 v, bytes32 r, bytes32 s) = _signPermit(owner, ownerPk, address(vault), amount, nonce, deadline);
 
         vault.depositWithPermit(owner, amount, deadline, v, r, s);
     }
